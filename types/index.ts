@@ -131,3 +131,101 @@ export interface FilterOptions {
   amenities?: string[];
   verifiedOnly?: boolean;
 }
+
+export interface Payment {
+  id: string;
+  type: "rent_payment" | "utility_payment" | "deposit" | "refund";
+  amount: number;
+  currency: string;
+  status: "pending" | "completed" | "failed" | "held";
+  propertyTitle: string;
+  description?: string;
+  method: string;
+  date: string;
+  receiptUrl?: string;
+}
+
+export interface PaymentMethod {
+  id: string;
+  type: "mpesa" | "card" | "bank" | "airtel_money";
+  phoneNumber?: string;
+  last4?: string;
+  brand?: string;
+  expiryMonth?: number;
+  expiryYear?: number;
+  isDefault: boolean;
+  addedAt: string;
+}
+
+export interface Notification {
+  id: string;
+  type: "payment_reminder" | "maintenance_update" | "utility_bill" | "message" | "system";
+  title: string;
+  message: string;
+  propertyTitle?: string;
+  isRead: boolean;
+  timestamp: string;
+  actionUrl?: string;
+}
+
+export interface UserSettings {
+  account: {
+    name: string;
+    email: string;
+    phone: string;
+    language: string;
+    currency: string;
+  };
+  notifications: {
+    email: boolean;
+    push: boolean;
+    sms: boolean;
+    paymentReminders: boolean;
+    maintenanceUpdates: boolean;
+    messages: boolean;
+    marketing: boolean;
+  };
+  privacy: {
+    profileVisibility: "public" | "private" | "contacts_only";
+    showEmail: boolean;
+    showPhone: boolean;
+  };
+  security: {
+    twoFactorEnabled: boolean;
+    biometricEnabled: boolean;
+    lastPasswordChange: string;
+  };
+  devices: Device[];
+}
+
+export interface Device {
+  id: string;
+  name: string;
+  type: string;
+  lastActive: string;
+  isCurrent: boolean;
+}
+
+export interface SupportTicket {
+  id: string;
+  userId: string;
+  subject: string;
+  category: "account" | "payment" | "property" | "technical" | "other";
+  message: string;
+  status: "open" | "in_progress" | "resolved" | "closed";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FAQCategory {
+  id: string;
+  title: string;
+  icon: string;
+  faqs: FAQ[];
+}
+
+export interface FAQ {
+  id: string;
+  question: string;
+  answer: string;
+}
