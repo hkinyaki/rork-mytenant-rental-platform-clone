@@ -150,7 +150,7 @@ export default function ProfileScreen() {
               style={styles.roleSwitchButton}
               onPress={handleRoleSwitch}
               disabled={isSwitchingRole}
-              activeScale={0.98}
+              activeOpacity={0.7}
             >
               {isSwitchingRole ? (
                 <View style={styles.roleSwitchLoading}>
