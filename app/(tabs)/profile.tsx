@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Platform,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Image } from "expo-image";
@@ -24,6 +25,7 @@ import {
   Calendar,
   Wallet,
   Wrench,
+  RefreshCw,
 } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
 import Colors from "@/constants/colors";
@@ -31,8 +33,8 @@ import { typography, spacing } from "@/constants/typography";
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user, isAuthenticated, logout, triggerAuth } = useAuth();
-  const [isLandlordView, setIsLandlordView] = useState<boolean>(false);
+  const { user, isAuthenticated, logout, triggerAuth, switchRole, isSwitchingRole } = useAuth();
+  const [currentRole, setCurrentRole] = useState<"tenant" | "landlord">("tenant");
 
   const handleLogout = () => {
     Alert.alert(
@@ -43,6 +45,12 @@ export default function ProfileScreen() {
         { text: "Log Out", style: "destructive", onPress: logout },
       ]
     );
+  };
+
+  const handleRoleSwitch = async () => {
+    const newRole = currentRole === "tenant" ? "landlord" : "tenant";
+    await switchRole(newRole);
+    setCurrentRole(newRole);
   };
 
   if (!isAuthenticated) {
@@ -137,6 +145,31 @@ export default function ProfileScreen() {
             </View>
           </View>
 
+          {user?.role === "both" && (
+            <TouchableOpacity
+              style={styles.roleSwitchButton}
+              onPress={handleRoleSwitch}
+              disabled={isSwitchingRole}
+              activeScale={0.98}
+            >
+              {isSwitchingRole ? (
+                <View style={styles.roleSwitchLoading}>
+                  <ActivityIndicator size="small" color={Colors.background} />
+                  <Text style={styles.roleSwitchButtonText}>
+                    Switching to {currentRole === "tenant" ? "Landlord" : "Tenant"}...
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.roleSwitchContent}>
+                  <RefreshCw size={18} color={Colors.background} />
+                  <Text style={styles.roleSwitchButtonText}>
+                    {currentRole === "tenant" ? "Switch to Landlord" : "Return to Tenant"}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          )}
+
           {user?.role === "tenant" && (
             <TouchableOpacity
               style={styles.hostBanner}
@@ -150,27 +183,6 @@ export default function ProfileScreen() {
               </View>
               <ChevronRight size={20} color={Colors.primary} />
             </TouchableOpacity>
-          )}
-
-          {user?.role === "both" && (
-            <View style={styles.viewToggle}>
-              <TouchableOpacity
-                style={[styles.toggleButton, !isLandlordView && styles.toggleButtonActive]}
-                onPress={() => setIsLandlordView(false)}
-              >
-                <Text style={[styles.toggleButtonText, !isLandlordView && styles.toggleButtonTextActive]}>
-                  Tenant View
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.toggleButton, isLandlordView && styles.toggleButtonActive]}
-                onPress={() => setIsLandlordView(true)}
-              >
-                <Text style={[styles.toggleButtonText, isLandlordView && styles.toggleButtonTextActive]}>
-                  Landlord View
-                </Text>
-              </TouchableOpacity>
-            </View>
           )}
         </View>
 
@@ -342,6 +354,36 @@ const styles = StyleSheet.create({
   },
   toggleButtonTextActive: {
     color: Colors.text,
+  },
+  roleSwitchButton: {
+    backgroundColor: Colors.secondary,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: 12,
+    marginTop: spacing.md,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  roleSwitchContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.sm,
+  },
+  roleSwitchLoading: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.sm,
+  },
+  roleSwitchButtonText: {
+    fontSize: typography.body.fontSize,
+    fontWeight: typography.bodySemibold.fontWeight,
+    color: Colors.background,
+    textAlign: "center" as const,
   },
   hostBanner: {
     flexDirection: "row",

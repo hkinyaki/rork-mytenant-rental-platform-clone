@@ -28,21 +28,16 @@ import { trpc } from "@/lib/trpc";
 export default function DashboardScreen() {
   const router = useRouter();
   const { user } = useAuth();
-  const [currentRole, setCurrentRole] = useState<"tenant" | "landlord">("tenant");
-  const [isRoleSwitching, setIsRoleSwitching] = useState<boolean>(false);
+  const [currentRole] = useState<"tenant" | "landlord">(
+    (user?.role === "both" ? "tenant" : user?.role) as "tenant" | "landlord"
+  );
 
   const dashboardQuery = trpc.dashboard.get.useQuery({
     userId: user?.id || "user-1",
     role: currentRole,
   });
 
-  const handleRoleSwitch = () => {
-    setIsRoleSwitching(true);
-    setTimeout(() => {
-      setCurrentRole(currentRole === "tenant" ? "landlord" : "tenant");
-      setIsRoleSwitching(false);
-    }, 1500);
-  };
+
 
   const formatCurrency = (amount: number, currency: string = "TZS") => {
     return `${currency} ${amount.toLocaleString()}`;
@@ -52,31 +47,6 @@ export default function DashboardScreen() {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   };
-
-
-
-  if (isRoleSwitching) {
-    return (
-      <View style={styles.container}>
-        <Stack.Screen
-          options={{
-            title: "Dashboard",
-            headerLeft: () => (
-              <TouchableOpacity onPress={() => router.back()}>
-                <ArrowLeft size={24} color={Colors.text} />
-              </TouchableOpacity>
-            ),
-          }}
-        />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.loadingText}>
-            Switching to {currentRole === "tenant" ? "Landlord" : "Tenant"} Dashboard...
-          </Text>
-        </View>
-      </View>
-    );
-  }
 
   if (dashboardQuery.isLoading) {
     return (
@@ -148,23 +118,6 @@ export default function DashboardScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {user?.role === "both" && (
-          <View style={styles.roleSwitchContainer}>
-            <Text style={styles.currentRoleLabel}>Current View:</Text>
-            <TouchableOpacity
-              style={styles.roleSwitchButton}
-              onPress={handleRoleSwitch}
-            >
-              <Text style={styles.roleSwitchButtonText}>
-                {currentRole === "tenant" ? "Tenant" : "Landlord"} Dashboard
-              </Text>
-              <Text style={styles.roleSwitchSubtext}>
-                Tap to switch to {currentRole === "tenant" ? "Landlord" : "Tenant"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
         {data.role === "tenant" ? (
           <View style={styles.dashboardContent}>
             <View style={styles.statsGrid}>
@@ -413,33 +366,6 @@ const styles = StyleSheet.create({
     color: Colors.background,
     fontSize: typography.body.fontSize,
     fontWeight: typography.bodySemibold.fontWeight,
-  },
-  roleSwitchContainer: {
-    backgroundColor: Colors.background,
-    padding: spacing.md,
-    borderRadius: 12,
-    marginBottom: spacing.md,
-  },
-  currentRoleLabel: {
-    fontSize: typography.caption.fontSize,
-    color: Colors.textSecondary,
-    marginBottom: spacing.xs,
-  },
-  roleSwitchButton: {
-    backgroundColor: Colors.primary,
-    padding: spacing.md,
-    borderRadius: 8,
-  },
-  roleSwitchButtonText: {
-    fontSize: typography.bodyMedium.fontSize,
-    fontWeight: typography.bodySemibold.fontWeight,
-    color: Colors.background,
-  },
-  roleSwitchSubtext: {
-    fontSize: typography.small.fontSize,
-    color: Colors.background,
-    opacity: 0.8,
-    marginTop: 4,
   },
   dashboardContent: {
     gap: spacing.md,

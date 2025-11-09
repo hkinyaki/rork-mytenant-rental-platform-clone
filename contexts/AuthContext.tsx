@@ -18,6 +18,8 @@ interface AuthContextValue {
   setShowAuthModal: (show: boolean) => void;
   authTriggerAction: string | null;
   triggerAuth: (action: string) => void;
+  switchRole: (newRole: "tenant" | "landlord") => Promise<void>;
+  isSwitchingRole: boolean;
 }
 
 export const [AuthProvider, useAuth] = createContextHook<AuthContextValue>(() => {
@@ -25,6 +27,7 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextValue>(() =>
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
   const [authTriggerAction, setAuthTriggerAction] = useState<string | null>(null);
+  const [isSwitchingRole, setIsSwitchingRole] = useState<boolean>(false);
 
   const login = useCallback(async (email: string, password?: string) => {
     setIsLoading(true);
@@ -104,6 +107,25 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextValue>(() =>
     console.log("Auth triggered for action:", action);
   }, []);
 
+  const switchRole = useCallback(async (newRole: "tenant" | "landlord") => {
+    if (!user) return;
+    
+    setIsSwitchingRole(true);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      
+      const updatedUser = { ...user, role: newRole === "tenant" ? "tenant" : "both" };
+      setUser(updatedUser);
+      await AsyncStorage.setItem("user", JSON.stringify(updatedUser));
+      
+      console.log("Role switched to:", newRole);
+    } catch (error) {
+      console.error("Role switch error:", error);
+    } finally {
+      setIsSwitchingRole(false);
+    }
+  }, [user]);
+
   const isAuthenticated = useMemo(() => user !== null, [user]);
 
   return {
@@ -120,5 +142,7 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextValue>(() =>
     setShowAuthModal,
     authTriggerAction,
     triggerAuth,
+    switchRole,
+    isSwitchingRole,
   };
 });
