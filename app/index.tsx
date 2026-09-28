@@ -36,7 +36,7 @@ export default function GateScreen() {
       router.replace("/kyc-details");
       return;
     }
-    router.replace("/(tabs)");
+    router.replace("/(tabs)/explore");
   }, [isHydrated, hasCompletedOnboarding, isAuthenticated, isKycVerified, router]);
 
   return (

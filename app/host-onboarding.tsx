@@ -23,11 +23,15 @@ import {
 } from "lucide-react-native";
 import Colors from "@/constants/colors";
 import { typography, spacing } from "@/constants/typography";
+import { useAuth } from "@/contexts/AuthContext";
+import { trpc } from "@/lib/trpc";
 
 type Step = "kyc" | "tin" | "bank" | "property" | "complete";
 
 export default function HostOnboardingScreen() {
   const router = useRouter();
+  const { user } = useAuth();
+  const createPropertyMutation = trpc.properties.create.useMutation();
   const [currentStep, setCurrentStep] = useState<Step>("kyc");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   
@@ -80,7 +84,28 @@ export default function HostOnboardingScreen() {
         setIsLoading(false);
         return;
       }
-      setCurrentStep("complete");
+      try {
+        await createPropertyMutation.mutateAsync({
+          hostId: user?.id || "user-1",
+          title: formData.propertyTitle,
+          address: formData.propertyAddress,
+          propertyType: (formData.propertyType || "apartment") as
+            | "apartment"
+            | "house"
+            | "studio"
+            | "villa"
+            | "room",
+          listingType: "monthly",
+          monthlyPrice: 500000,
+          bedrooms: 2,
+          bathrooms: 1,
+          guests: 3,
+        });
+        setCurrentStep("complete");
+      } catch (error) {
+        console.error("Property create error:", error);
+        Alert.alert("Error", "Could not save the property. Please try again.");
+      }
     }
 
     setIsLoading(false);

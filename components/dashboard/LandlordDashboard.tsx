@@ -9,8 +9,9 @@ import {
   CheckCircle,
   XCircle,
   Plus,
+  ChevronRight,
 } from "lucide-react-native";
-import Svg, { Rect, Text as SvgText } from "react-native-svg";
+import SimpleBarChart from "@/components/charts/SimpleBarChart";
 import Colors from "@/constants/colors";
 import { typography, spacing } from "@/constants/typography";
 import {
@@ -32,72 +33,10 @@ interface LandlordDashboardProps {
   data: LandlordDashboardData;
 }
 
-interface SimpleBarChartProps {
-  values: number[];
-  labels: string[];
-  color: string;
-  formatValue: (value: number) => string;
-}
-
-/**
- * Minimal horizontal-ish vertical bar chart built from raw react-native-svg
- * primitives. Uses a fixed viewBox (0 0 100 50) so bar geometry is computed
- * in proportional units and scales with the card width — no pixel math.
- */
-function SimpleBarChart({ values, labels, color, formatValue }: SimpleBarChartProps) {
-  const max = Math.max(...values, 1);
-  const slot = 100 / values.length;
-  const barWidth = slot * 0.55;
-  const baselineY = 42;
-  const chartHeight = 34;
-
-  return (
-    <Svg viewBox="0 0 100 50" width="100%" height={140}>
-      {/* baseline */}
-      <Rect x={4} y={baselineY} width={92} height={0.6} rx={0.3} fill={Colors.borderLight} />
-      {values.map((value, index) => {
-        const barHeight = Math.max(1.5, (value / max) * chartHeight);
-        const x = index * slot + (slot - barWidth) / 2;
-        return (
-          <React.Fragment key={index}>
-            <Rect
-              x={x}
-              y={baselineY - barHeight}
-              width={barWidth}
-              height={barHeight}
-              rx={1.5}
-              fill={color}
-            />
-            <SvgText
-              x={x + barWidth / 2}
-              y={baselineY - barHeight - 2}
-              fontSize={4}
-              fontWeight="600"
-              fill={Colors.text}
-              textAnchor="middle"
-            >
-              {formatValue(value)}
-            </SvgText>
-            <SvgText
-              x={x + barWidth / 2}
-              y={49}
-              fontSize={4.5}
-              fill={Colors.textSecondary}
-              textAnchor="middle"
-            >
-              {labels[index]}
-            </SvgText>
-          </React.Fragment>
-        );
-      })}
-    </Svg>
-  );
-}
-
 /**
  * Landlord dashboard content: income summary, occupancy/revenue charts
  * (react-native-svg), property cards, pending applications with mock
- * approve/reject, and an Add Property entry point.
+ * approve/reject, financial overview link and an Add Property entry point.
  */
 export default function LandlordDashboard({ data }: LandlordDashboardProps) {
   const router = useRouter();
@@ -201,6 +140,21 @@ export default function LandlordDashboard({ data }: LandlordDashboardProps) {
           ))}
         </View>
       </View>
+
+      {/* Financial overview entry */}
+      <TouchableOpacity
+        style={styles.financialsButton}
+        onPress={() => router.push("/financials" as any)}
+        activeOpacity={0.8}
+      >
+        <View style={styles.financialsInfo}>
+          <Text style={styles.financialsTitle}>Financial Overview</Text>
+          <Text style={styles.financialsSubtitle}>
+            Revenue trend, occupancy history & collection rate
+          </Text>
+        </View>
+        <ChevronRight size={20} color={Colors.primary} />
+      </TouchableOpacity>
 
       {/* Properties */}
       <View style={styles.section}>
@@ -342,6 +296,26 @@ const styles = StyleSheet.create({
     fontSize: typography.bodyMedium.fontSize,
     fontWeight: typography.bodySemibold.fontWeight,
     color: Colors.background,
+  },
+  financialsButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.background,
+    borderRadius: 12,
+    padding: spacing.md,
+  },
+  financialsInfo: {
+    flex: 1,
+  },
+  financialsTitle: {
+    fontSize: typography.bodyMedium.fontSize,
+    fontWeight: typography.bodySemibold.fontWeight,
+    color: Colors.text,
+  },
+  financialsSubtitle: {
+    fontSize: typography.caption.fontSize,
+    color: Colors.textSecondary,
+    marginTop: 2,
   },
   chartCard: {
     backgroundColor: Colors.background,

@@ -31,6 +31,11 @@ function RootLayoutNav() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="property/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="dashboard" options={{ title: "Dashboard" }} />
+      <Stack.Screen name="maintenance" options={{ title: "Maintenance" }} />
+      <Stack.Screen name="utility-bills" options={{ title: "Utility Bills" }} />
+      <Stack.Screen name="conversation/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="tenants" options={{ title: "Tenant Directory" }} />
+      <Stack.Screen name="financials" options={{ title: "Financial Overview" }} />
       <Stack.Screen
         name="auth"
         options={{
