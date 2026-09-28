@@ -41,7 +41,7 @@ const MOCK_CONVERSATIONS: MockConversation[] = [
 ];
 
 export default function MessagesScreen() {
-  const { isAuthenticated, triggerAuth } = useAuth();
+  const { isAuthenticated, triggerAuth, activeMode } = useAuth();
 
   if (!isAuthenticated) {
     return (
@@ -53,7 +53,7 @@ export default function MessagesScreen() {
           <MessageCircle size={64} color={Colors.primary} />
           <Text style={styles.authTitle}>Sign in to view your messages</Text>
           <Text style={styles.authSubtitle}>
-            Connect with hosts and manage your conversations
+            Connect with landlords and tenants and manage your conversations
           </Text>
           <TouchableOpacity
             style={styles.authButton}
@@ -121,7 +121,9 @@ export default function MessagesScreen() {
             <MessageCircle size={64} color={Colors.textLight} />
             <Text style={styles.emptyText}>No messages yet</Text>
             <Text style={styles.emptySubtext}>
-              Start a conversation with a host
+              {activeMode === "landlord"
+                ? "Message your tenants from a property to get started"
+                : "Browse properties and message a landlord to get started"}
             </Text>
           </View>
         }

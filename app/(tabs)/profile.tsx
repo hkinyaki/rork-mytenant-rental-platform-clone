@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   View,
   Text,
@@ -26,15 +26,25 @@ import {
   Wallet,
   Wrench,
   RefreshCw,
+  Home,
+  Users,
+  TrendingUp,
 } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
 import Colors from "@/constants/colors";
 import { typography, spacing } from "@/constants/typography";
+import { trpc } from "@/lib/trpc";
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user, isAuthenticated, logout, triggerAuth, switchRole, isSwitchingRole } = useAuth();
-  const [currentRole, setCurrentRole] = useState<"tenant" | "landlord">("tenant");
+  const { user, isAuthenticated, logout, triggerAuth, switchRole, isSwitchingRole, activeMode, isDualRole, canListProperties } = useAuth();
+
+  // Same query the full dashboard uses; activeMode is part of the input, so
+  // the query key changes and React Query refetches on role-view switches.
+  const profileQuery = trpc.dashboard.get.useQuery(
+    { userId: user?.id || "user-1", role: activeMode },
+    { enabled: isAuthenticated }
+  );
 
   const handleLogout = () => {
     Alert.alert(
@@ -48,9 +58,8 @@ export default function ProfileScreen() {
   };
 
   const handleRoleSwitch = async () => {
-    const newRole = currentRole === "tenant" ? "landlord" : "tenant";
-    await switchRole(newRole);
-    setCurrentRole(newRole);
+    const nextMode: "tenant" | "landlord" = activeMode === "tenant" ? "landlord" : "tenant";
+    await switchRole(nextMode);
   };
 
   if (!isAuthenticated) {
@@ -81,6 +90,72 @@ export default function ProfileScreen() {
       </View>
     );
   }
+
+  const data = profileQuery.data;
+
+  // Summary mirrors the active dashboard mode and reads the same tRPC query
+  // the full dashboard uses (the dashboard itself splits in Step C).
+  const summaryCards: {
+    icon: typeof Calendar;
+    label: string;
+    value: string;
+    color: string;
+    onPress: () => void;
+  }[] =
+    data && data.role === "tenant"
+      ? [
+          {
+            icon: Calendar,
+            color: Colors.primary,
+            label: "Rent Due",
+            value: `${data.stats.rentDue.daysUntilDue} days`,
+            onPress: () => router.push("/dashboard" as any),
+          },
+          {
+            icon: Wallet,
+            color: Colors.success,
+            label: "Wallet",
+            value: `TZS ${Math.round(data.stats.walletBalance / 1000)}K`,
+            onPress: () => router.push("/payments" as any),
+          },
+          {
+            icon: Wrench,
+            color: Colors.warning,
+            label: "Maintenance",
+            value: `${data.stats.maintenanceActive} active`,
+            onPress: () => router.push("/dashboard" as any),
+          },
+        ]
+      : data && data.role === "landlord"
+        ? [
+            {
+              icon: TrendingUp,
+              color: Colors.success,
+              label: "Monthly Revenue",
+              value: `TZS ${(data.stats.monthlyRevenue / 1_000_000).toFixed(1)}M`,
+              onPress: () => router.push("/dashboard" as any),
+            },
+            {
+              icon: Home,
+              color: Colors.primary,
+              label: "Properties",
+              value: `${data.stats.activeProperties} listed`,
+              onPress: () => router.push("/dashboard" as any),
+            },
+            {
+              icon: Users,
+              color: Colors.warning,
+              label: "Applications",
+              value: `${data.stats.pendingApplications} pending`,
+              onPress: () => router.push("/dashboard" as any),
+            },
+          ]
+        : [
+            // Query loading — transient placeholders shaped to the active mode.
+            { icon: Calendar, color: Colors.primary, label: "Rent Due", value: "…", onPress: () => router.push("/dashboard" as any) },
+            { icon: Wallet, color: Colors.success, label: "Wallet", value: "…", onPress: () => router.push("/payments" as any) },
+            { icon: Wrench, color: Colors.warning, label: "Maintenance", value: "…", onPress: () => router.push("/dashboard" as any) },
+          ];
 
   const menuItems = [
     {
@@ -145,7 +220,7 @@ export default function ProfileScreen() {
             </View>
           </View>
 
-          {user?.role === "both" && (
+          {isDualRole && (
             <TouchableOpacity
               style={styles.roleSwitchButton}
               onPress={handleRoleSwitch}
@@ -156,21 +231,21 @@ export default function ProfileScreen() {
                 <View style={styles.roleSwitchLoading}>
                   <ActivityIndicator size="small" color={Colors.background} />
                   <Text style={styles.roleSwitchButtonText}>
-                    Switching to {currentRole === "tenant" ? "Landlord" : "Tenant"}...
+                    Switching to {activeMode === "tenant" ? "Landlord" : "Tenant"}...
                   </Text>
                 </View>
               ) : (
                 <View style={styles.roleSwitchContent}>
                   <RefreshCw size={18} color={Colors.background} />
                   <Text style={styles.roleSwitchButtonText}>
-                    {currentRole === "tenant" ? "Switch to Landlord" : "Return to Tenant"}
+                    {activeMode === "tenant" ? "Switch to Landlord" : "Return to Tenant"}
                   </Text>
                 </View>
               )}
             </TouchableOpacity>
           )}
 
-          {user?.role === "tenant" && (
+          {!canListProperties && (
             <TouchableOpacity
               style={styles.hostBanner}
               onPress={() => router.push("/host-onboarding" as any)}
@@ -189,29 +264,15 @@ export default function ProfileScreen() {
         <View style={styles.summarySection}>
           <Text style={styles.summarySectionTitle}>Overview</Text>
           <View style={styles.summaryGrid}>
-            <TouchableOpacity style={styles.summaryCard} onPress={() => console.log("View Dashboard")}>
-              <View style={styles.summaryIconContainer}>
-                <Calendar size={20} color={Colors.primary} />
-              </View>
-              <Text style={styles.summaryLabel}>Rent Due</Text>
-              <Text style={styles.summaryValue}>3 days</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.summaryCard} onPress={() => console.log("View Wallet")}>
-              <View style={styles.summaryIconContainer}>
-                <Wallet size={20} color={Colors.success} />
-              </View>
-              <Text style={styles.summaryLabel}>Wallet</Text>
-              <Text style={styles.summaryValue}>TZS 250K</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.summaryCard} onPress={() => console.log("View Maintenance")}>
-              <View style={styles.summaryIconContainer}>
-                <Wrench size={20} color={Colors.warning} />
-              </View>
-              <Text style={styles.summaryLabel}>Maintenance</Text>
-              <Text style={styles.summaryValue}>1 active</Text>
-            </TouchableOpacity>
+            {summaryCards.map((card) => (
+              <TouchableOpacity key={card.label} style={styles.summaryCard} onPress={card.onPress}>
+                <View style={styles.summaryIconContainer}>
+                  <card.icon size={20} color={card.color} />
+                </View>
+                <Text style={styles.summaryLabel}>{card.label}</Text>
+                <Text style={styles.summaryValue}>{card.value}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
 
           <TouchableOpacity style={styles.viewDashboardButton} onPress={() => router.push("/dashboard" as any)}>
