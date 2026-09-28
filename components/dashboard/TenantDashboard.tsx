@@ -1,7 +1,8 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { useRouter } from "expo-router";
 import { Image } from "expo-image";
-import { Calendar, Wallet, Wrench, CheckCircle } from "lucide-react-native";
+import { Calendar, Wallet, Wrench, CheckCircle, Droplets, ChevronRight } from "lucide-react-native";
 import Colors from "@/constants/colors";
 import { typography, spacing } from "@/constants/typography";
 import { formatCurrency, formatDate } from "@/components/dashboard/format";
@@ -25,6 +26,8 @@ interface TenantDashboardProps {
  * active bookings, maintenance tickets and utility bills.
  */
 export default function TenantDashboard({ data, onPayNow }: TenantDashboardProps) {
+  const router = useRouter();
+
   return (
     <View style={styles.dashboardContent}>
       <View style={styles.statsGrid}>
@@ -107,6 +110,33 @@ export default function TenantDashboard({ data, onPayNow }: TenantDashboardProps
         </View>
       )}
 
+      {/* Maintenance & bills entry */}
+      <TouchableOpacity
+        style={styles.linkRow}
+        onPress={() => router.push("/maintenance" as any)}
+      >
+        <Wrench size={20} color={Colors.primary} />
+        <View style={styles.linkInfo}>
+          <Text style={styles.linkTitle}>Maintenance Requests</Text>
+          <Text style={styles.linkSubtitle}>
+            Raise issues, attach photos, track progress
+          </Text>
+        </View>
+        <ChevronRight size={18} color={Colors.textLight} />
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.linkRow}
+        onPress={() => router.push("/utility-bills" as any)}
+      >
+        <Droplets size={20} color={Colors.primary} />
+        <View style={styles.linkInfo}>
+          <Text style={styles.linkTitle}>Utility Bills</Text>
+          <Text style={styles.linkSubtitle}>Track and pay water, power & internet</Text>
+        </View>
+        <ChevronRight size={18} color={Colors.textLight} />
+      </TouchableOpacity>
+
       {data.utilityBills.length > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Utility Bills</Text>
@@ -133,6 +163,27 @@ export default function TenantDashboard({ data, onPayNow }: TenantDashboardProps
 const styles = StyleSheet.create({
   dashboardContent: {
     gap: spacing.md,
+  },
+  linkRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.background,
+    borderRadius: 12,
+    padding: spacing.md,
+    gap: spacing.md,
+  },
+  linkInfo: {
+    flex: 1,
+  },
+  linkTitle: {
+    fontSize: typography.bodyMedium.fontSize,
+    fontWeight: typography.bodySemibold.fontWeight,
+    color: Colors.text,
+  },
+  linkSubtitle: {
+    fontSize: typography.caption.fontSize,
+    color: Colors.textSecondary,
+    marginTop: 1,
   },
   statsGrid: {
     flexDirection: "row",

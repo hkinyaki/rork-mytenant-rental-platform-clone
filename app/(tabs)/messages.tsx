@@ -1,47 +1,20 @@
 import React from "react";
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from "react-native";
 import { Image } from "expo-image";
 import { MessageCircle, Clock } from "lucide-react-native";
+import { useRouter } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
+import { trpc } from "@/lib/trpc";
 import Colors from "@/constants/colors";
 import { typography, spacing } from "@/constants/typography";
 
-interface MockConversation {
-  id: string;
-  propertyTitle: string;
-  propertyPhoto: string;
-  otherUserName: string;
-  otherUserPhoto: string;
-  lastMessage: string;
-  timestamp: string;
-  unreadCount: number;
-}
-
-const MOCK_CONVERSATIONS: MockConversation[] = [
-  {
-    id: "1",
-    propertyTitle: "Modern 2BR Apartment in Westlands",
-    propertyPhoto: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=200",
-    otherUserName: "Sarah Johnson",
-    otherUserPhoto: "https://i.pravatar.cc/150?img=1",
-    lastMessage: "The property is available for viewing tomorrow",
-    timestamp: "2h ago",
-    unreadCount: 2,
-  },
-  {
-    id: "2",
-    propertyTitle: "Cozy Studio in Kilimani",
-    propertyPhoto: "https://images.unsplash.com/photo-1536376072261-38c75010e6c9?w=200",
-    otherUserName: "David Kamau",
-    otherUserPhoto: "https://i.pravatar.cc/150?img=12",
-    lastMessage: "Thank you for your interest!",
-    timestamp: "1d ago",
-    unreadCount: 0,
-  },
-];
-
 export default function MessagesScreen() {
-  const { isAuthenticated, triggerAuth, activeMode } = useAuth();
+  const router = useRouter();
+  const { isAuthenticated, triggerAuth, activeMode, user } = useAuth();
+  const conversationsQuery = trpc.messages.conversations.useQuery(
+    { userId: user?.id || "user-1" },
+    { enabled: isAuthenticated }
+  );
 
   if (!isAuthenticated) {
     return (
@@ -66,25 +39,39 @@ export default function MessagesScreen() {
     );
   }
 
-  const renderItem = ({ item }: { item: MockConversation }) => (
-    <TouchableOpacity style={styles.conversationCard}>
+  type ConversationItem = NonNullable<
+    typeof conversationsQuery extends { data: infer D | undefined } ? D : never
+  >["conversations"][number];
+
+  const renderItem = ({ item }: { item: ConversationItem }) => (
+    <TouchableOpacity
+      style={styles.conversationCard}
+      onPress={() => router.push(`/conversation/${item.id}` as any)}
+    >
       <Image
-        source={{ uri: item.otherUserPhoto }}
+        source={{ uri: item.participantPhoto }}
         style={styles.avatar}
         contentFit="cover"
       />
       <View style={styles.conversationContent}>
         <View style={styles.conversationHeader}>
           <Text style={styles.userName} numberOfLines={1}>
-            {item.otherUserName}
+            {item.participantName}
           </Text>
           <View style={styles.timeContainer}>
             <Clock size={12} color={Colors.textSecondary} />
-            <Text style={styles.timestamp}>{item.timestamp}</Text>
+            <Text style={styles.timestamp}>
+              {item.lastMessage
+                ? new Date(item.lastMessage.timestamp).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  })
+                : ""}
+            </Text>
           </View>
         </View>
         <Text style={styles.propertyTitle} numberOfLines={1}>
-          {item.propertyTitle}
+          {item.propertyTitle ?? ""}
         </Text>
         <Text
           style={[
@@ -93,7 +80,7 @@ export default function MessagesScreen() {
           ]}
           numberOfLines={1}
         >
-          {item.lastMessage}
+          {item.lastMessage?.text ?? ""}
         </Text>
       </View>
       {item.unreadCount > 0 && (
@@ -110,24 +97,28 @@ export default function MessagesScreen() {
         <Text style={styles.headerTitle}>Messages</Text>
       </View>
 
-      <FlatList
-        data={MOCK_CONVERSATIONS}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <MessageCircle size={64} color={Colors.textLight} />
-            <Text style={styles.emptyText}>No messages yet</Text>
-            <Text style={styles.emptySubtext}>
-              {activeMode === "landlord"
-                ? "Message your tenants from a property to get started"
-                : "Browse properties and message a landlord to get started"}
-            </Text>
-          </View>
-        }
-      />
+      {conversationsQuery.isLoading ? (
+        <ActivityIndicator style={styles.loading} color={Colors.primary} />
+      ) : (
+        <FlatList
+          data={conversationsQuery.data?.conversations ?? []}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.list}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <MessageCircle size={64} color={Colors.textLight} />
+              <Text style={styles.emptyText}>No messages yet</Text>
+              <Text style={styles.emptySubtext}>
+                {activeMode === "landlord"
+                  ? "Message your tenants from a property to get started"
+                  : "Browse properties and message a landlord to get started"}
+              </Text>
+            </View>
+          }
+        />
+      )}
     </View>
   );
 }
@@ -152,6 +143,9 @@ const styles = StyleSheet.create({
   },
   list: {
     flexGrow: 1,
+  },
+  loading: {
+    marginTop: spacing.xl,
   },
   conversationCard: {
     flexDirection: "row",

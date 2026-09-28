@@ -157,6 +157,29 @@ export default function ProfileScreen() {
             { icon: Wrench, color: Colors.warning, label: "Maintenance", value: "…", onPress: () => router.push("/dashboard" as any) },
           ];
 
+  const landlordMenuItems = isDualRole
+    ? [
+        {
+          icon: Users,
+          title: "Tenant Directory",
+          subtitle: "Tenants, leases & balances",
+          onPress: () => router.push("/tenants" as any),
+        },
+        {
+          icon: TrendingUp,
+          title: "Financial Overview",
+          subtitle: "Revenue, occupancy & collections",
+          onPress: () => router.push("/financials" as any),
+        },
+        {
+          icon: Wrench,
+          title: "Maintenance Requests",
+          subtitle: "Tenant tickets & progress",
+          onPress: () => router.push("/maintenance" as any),
+        },
+      ]
+    : [];
+
   const menuItems = [
     {
       icon: Heart,
@@ -280,6 +303,28 @@ export default function ProfileScreen() {
             <Text style={styles.viewDashboardButtonText}>View Full Dashboard</Text>
           </TouchableOpacity>
         </View>
+
+        {landlordMenuItems.length > 0 && (
+          <View style={styles.menuSection}>
+            <Text style={styles.menuSectionTitle}>Landlord Tools</Text>
+            {landlordMenuItems.map((item, index) => (
+              <TouchableOpacity
+                key={item.title}
+                style={styles.menuItem}
+                onPress={item.onPress}
+              >
+                <View style={styles.menuIconContainer}>
+                  <item.icon size={22} color={Colors.primary} />
+                </View>
+                <View style={styles.menuItemContent}>
+                  <Text style={styles.menuItemTitle}>{item.title}</Text>
+                  <Text style={styles.menuItemSubtitle}>{item.subtitle}</Text>
+                </View>
+                <ChevronRight size={18} color={Colors.textLight} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
         <View style={styles.menuSection}>
           {menuItems.map((item, index) => (
@@ -468,6 +513,15 @@ const styles = StyleSheet.create({
   hostBannerText: {
     fontSize: typography.small.fontSize,
     color: Colors.textSecondary,
+  },
+  menuSectionTitle: {
+    fontSize: typography.captionBold.fontSize,
+    fontWeight: typography.captionBold.fontWeight,
+    color: Colors.textSecondary,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: spacing.sm,
+    paddingHorizontal: spacing.sm,
   },
   menuSection: {
     backgroundColor: Colors.background,

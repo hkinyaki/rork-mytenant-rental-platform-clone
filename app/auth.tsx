@@ -38,7 +38,7 @@ export default function AuthModal() {
     if (!arrivedViaGate && router.canDismiss()) {
       router.back();
     } else {
-      router.replace("/(tabs)");
+      router.replace("/(tabs)/explore");
     }
   };
 
