@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -19,7 +19,7 @@ type AuthMode = "email" | "phone" | "oauth";
 
 export default function AuthModal() {
   const router = useRouter();
-  const { login, loginWithPhone, loginWithGoogle, loginWithApple, isLoading, showAuthModal, setShowAuthModal, authTriggerAction } = useAuth();
+  const { login, loginWithPhone, loginWithGoogle, loginWithApple, isLoading, setShowAuthModal, authTriggerAction } = useAuth();
   
   const [mode, setMode] = useState<AuthMode>("email");
   const [emailOrPhone, setEmailOrPhone] = useState<string>("");
@@ -27,15 +27,29 @@ export default function AuthModal() {
   const [showOtp, setShowOtp] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
 
-  useEffect(() => {
-    if (!showAuthModal) {
-      router.back();
-    }
-  }, [showAuthModal, router]);
+  // How did we get here? The "/" gate pushes unauthenticated users onto
+  // /auth during the startup ladder; features also open it via triggerAuth()
+  // for browse-first actions. Gate arrivals re-run the ladder on success
+  // instead of popping, so the KYC check can never be bypassed.
+  const [arrivedViaGate] = useState<boolean>(() => !router.canDismiss());
 
   const handleClose = () => {
     setShowAuthModal(false);
-    router.back();
+    if (!arrivedViaGate && router.canDismiss()) {
+      router.back();
+    } else {
+      router.replace("/(tabs)");
+    }
+  };
+
+  const handleLoginSuccess = () => {
+    setShowAuthModal(false);
+    if (arrivedViaGate) {
+      // Re-run the gate ladder; it routes to /kyc-details next for new users.
+      router.replace("/");
+    } else {
+      handleClose();
+    }
   };
 
   const handleEmailPhoneSubmit = async () => {
@@ -54,7 +68,7 @@ export default function AuthModal() {
     } else if (emailOrPhone.includes("@")) {
       try {
         await login(emailOrPhone);
-        handleClose();
+        handleLoginSuccess();
         if (authTriggerAction) {
           console.log("Completed auth for action:", authTriggerAction);
         }
@@ -76,7 +90,7 @@ export default function AuthModal() {
 
     try {
       await loginWithPhone(emailOrPhone, otp);
-      handleClose();
+      handleLoginSuccess();
       if (authTriggerAction) {
         console.log("Completed auth for action:", authTriggerAction);
       }
@@ -88,7 +102,7 @@ export default function AuthModal() {
   const handleGoogleLogin = async () => {
     try {
       await loginWithGoogle();
-      handleClose();
+      handleLoginSuccess();
     } catch (err) {
       setError("Google sign-in failed");
     }
@@ -97,7 +111,7 @@ export default function AuthModal() {
   const handleAppleLogin = async () => {
     try {
       await loginWithApple();
-      handleClose();
+      handleLoginSuccess();
     } catch (err) {
       setError("Apple sign-in failed");
     }
@@ -200,7 +214,7 @@ export default function AuthModal() {
           <>
             <View style={styles.content}>
               <Text style={styles.otpInstructions}>
-                We've sent a 6-digit code to {emailOrPhone}
+                We&apos;ve sent a 6-digit code to {emailOrPhone}
               </Text>
 
               <View style={styles.inputContainer}>

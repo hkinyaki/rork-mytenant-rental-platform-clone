@@ -229,3 +229,47 @@ export interface FAQ {
   question: string;
   answer: string;
 }
+
+// ---------- KYC verification (3-step flow) ----------
+
+export type IdDocumentType = "national_id" | "passport";
+
+/** Step 1 — personal details collected in kyc-details.tsx. */
+export interface KycPersonalDetails {
+  fullName: string;
+  email: string;
+  phone: string;
+  idNumber: string;
+  city: string;
+}
+
+/** Step 2 — ID document photo captured in kyc-id-upload.tsx. */
+export interface KycIdDocument {
+  documentType: IdDocumentType;
+  /** Local captured image URI (file:// or content://) — not uploaded in Phase 2. */
+  imageUri: string;
+  capturedAt: string;
+}
+
+/** Step 3 — live selfie captured in kyc-face-verify.tsx. */
+export interface KycSelfie {
+  imageUri: string;
+  capturedAt: string;
+  livenessMethod: "live_camera";
+}
+
+/** Everything collected across the 3 steps, persisted as a draft. */
+export interface KycDraft {
+  personalDetails: KycPersonalDetails | null;
+  idDocument: KycIdDocument | null;
+  selfie: KycSelfie | null;
+  updatedAt: string;
+}
+
+/** Final payload produced when all 3 steps are complete. */
+export interface KycSubmission {
+  personalDetails: KycPersonalDetails;
+  idDocument: KycIdDocument;
+  selfie: KycSelfie;
+  submittedAt: string;
+}

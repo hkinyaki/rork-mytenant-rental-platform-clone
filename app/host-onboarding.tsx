@@ -217,7 +217,7 @@ export default function HostOnboardingScreen() {
             </View>
             <Text style={styles.stepTitle}>Property Information</Text>
             <Text style={styles.stepDescription}>
-              Let's add your first property. You can add more properties later from your dashboard.
+              Let&apos;s add your first property. You can add more properties later from your dashboard.
             </Text>
 
             <View style={styles.inputGroup}>
